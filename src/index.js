@@ -7,7 +7,7 @@ var assign = require('object-assign');
 var omit = require('lodash.omit');
 var mediaQuery = require('./mediaQuery');
 var toQuery = require('./toQuery');
-var matchMedia = typeof window !== 'undefined' ? window.matchMedia : null;
+var isBrowser = typeof window !== 'undefined';
 
 var defaultTypes = {
   component: React.PropTypes.func,
@@ -34,12 +34,12 @@ var mq = React.createClass({
     };
   },
 
-  componentWillMount: function(){
-    this.updateQuery(this.props);
+  componentDidMount: function(){
+    isBrowser && this.updateQuery(this.props);
   },
 
   componentWillReceiveProps: function(props){
-    this.updateQuery(props);
+    isBrowser && this.updateQuery(props);
   },
 
   updateQuery: function(props){
@@ -52,13 +52,14 @@ var mq = React.createClass({
     if (!this.query) {
       throw new Error('Invalid or missing MediaQuery!');
     }
+
     this._mql = matchMedia(this.query);
     this._mql.addListener(this.updateMatches);
     this.updateMatches();
   },
 
   componentWillUnmount: function(){
-    this._mql.removeListener(this.updateMatches);
+    isBrowser && this._mql.removeListener(this.updateMatches);
   },
 
   updateMatches: function(){
@@ -71,11 +72,16 @@ var mq = React.createClass({
   },
 
   render: function(){
-    if (this.state.matches === false) {
-      return null;
+    var children = this.props.children;
+    var style = {};
+
+    if (!isBrowser || this.state.matches === false) {
+      style.display = 'none';
     }
-    var props = omit(this.props, excludedPropKeys);
-    return this.props.component(props, this.props.children);
+
+    return React.DOM.div({
+      style: style
+    }, this.props.children);
   }
 });
 
